@@ -20,19 +20,22 @@ export default {
 			target.hostname = BACKEND_API;
 			target.protocol = 'https:';
 			target.port = '';
-			return fetch(target.toString(), request);
+
+			// ← URL を差し替えた Request を新規に作る
+			const backendReq = new Request(target.toString(), request);
+			return fetch(backendReq);
 		}
 
-		// ❷ Spam-checker SPA ---------------------------------------------------
-		if (path === "/spam-checker") {
-			return Response.redirect("https://tatsunori.app/spam-checker/", 301);
-		  }
-		  if (path.startsWith("/spam-checker")) {
-			target.pathname = path.replace(/^\/spam-checker/, "") || "/";
+		// ❷ Spam-checker SPA --------------------------------------------------
+		if (path.startsWith('/spam-checker')) {
+			target.pathname = path.replace(/^\/spam-checker/, '') || '/';
 			target.hostname = SPAM_FRONTEND;
-			target.protocol = "https:";
-			return fetch(target.toString(), request);
-		  }
+			target.protocol = 'https:';
+			target.port = '';
+
+			const spaReq = new Request(target.toString(), request);
+			return fetch(spaReq);
+		}
 
 		// ❸ Portfolio SPA ------------------------------------------------------
 		if (path.startsWith('/portfolio')) {
