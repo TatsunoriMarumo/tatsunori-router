@@ -1,48 +1,47 @@
 /**
- * tatsu-router/src/index.ts
- * Cloudflare Worker (TypeScript) – パスベース振り分け
+ * src/index.ts
+ * Cloudflare Worker — path-based reverse proxy
  */
 
-interface Env {} // 今回は環境変数を使わない
+interface Env {} // 環境変数を使う場合はここに追記
 
-// 転送先ホスト（プロトコル込みで書くと楽）
-const BACKEND_API = 'https://spam-checker-erfw.onrender.com';
-const SPAM_FRONTEND = 'https://spam-checker-frontend.netlify.app';
-const PORTFOLIO_FRONT = 'https://YOUR-PORTFOLIO.vercel.app';
+// 各オリジンのホスト名（プロトコルは後で統一して https に）
+const BACKEND_API = 'spam-checker-erfw.onrender.com';
+const SPAM_FRONTEND = 'spam-checker-frontend.netlify.app';
+const PORTFOLIO_FRONT = 'your-portfolio.vercel.app';
 
 export default {
 	async fetch(request: Request, _env: Env, _ctx: ExecutionContext): Promise<Response> {
-		const url = new URL(request.url);
-		const path = url.pathname + url.search; 
-
-		/* ──────────────────────────────────────────────────────────── */
-		/* 1. FastAPI バックエンド                                      */
-		/*    /spam-checker/api/...  → Render                           */
-		/* ──────────────────────────────────────────────────────────── */
+		// 受信 URL をコピーしてホスト名だけ後で差し替える
+		const target = new URL(request.url);
+		const path = target.pathname; // `/spam-checker/...` など
+		// ❶ FastAPI backend ---------------------------------------------------
 		if (path.startsWith('/spam-checker/api')) {
-			// Backend 側は /api から始まる想定なので /spam-checker を剥がす
-			return fetch(`${BACKEND_API}${path}`, request);
+			target.hostname = BACKEND_API;
+			target.protocol = 'https:';
+			target.port = '';
+			return fetch(target.toString(), request);
 		}
 
-		/* ──────────────────────────────────────────────────────────── */
-		/* 2. スパムチェッカー SPA                                     */
-		/*    /spam-checker/...       → Netlify 等                     */
-		/* ──────────────────────────────────────────────────────────── */
+		// ❷ Spam-checker SPA ---------------------------------------------------
 		if (path.startsWith('/spam-checker')) {
-			return fetch(`${SPAM_FRONTEND}${path}`, request);
+			// `/spam-checker` を取り除く（空になったら `/` に）
+			target.pathname = path.replace(/^\/spam-checker/, '') || '/';
+			target.hostname = SPAM_FRONTEND;
+			target.protocol = 'https:';
+			target.port = '';
+			return fetch(target.toString(), request);
 		}
 
-		/* ──────────────────────────────────────────────────────────── */
-		/* 3. ポートフォリオ SPA                                       */
-		/*    /portfolio/...          → Vercel 等                      */
-		/* ──────────────────────────────────────────────────────────── */
+		// ❸ Portfolio SPA ------------------------------------------------------
 		if (path.startsWith('/portfolio')) {
-			return fetch(`${PORTFOLIO_FRONT}${path}`, request);
+			target.hostname = PORTFOLIO_FRONT;
+			target.protocol = 'https:';
+			target.port = '';
+			return fetch(target.toString(), request);
 		}
 
-		/* ──────────────────────────────────────────────────────────── */
-		/* 4. それ以外 = 404                                           */
-		/* ──────────────────────────────────────────────────────────── */
+		// ❹ Fallback -----------------------------------------------------------
 		return new Response('Not Found', { status: 404 });
 	},
 } satisfies ExportedHandler<Env>;
