@@ -24,14 +24,15 @@ export default {
 		}
 
 		// ❷ Spam-checker SPA ---------------------------------------------------
-		if (path.startsWith('/spam-checker')) {
-			// `/spam-checker` を取り除く（空になったら `/` に）
-			target.pathname = path.replace(/^\/spam-checker/, '') || '/';
+		if (path === "/spam-checker") {
+			return Response.redirect("https://tatsunori.app/spam-checker/", 301);
+		  }
+		  if (path.startsWith("/spam-checker")) {
+			target.pathname = path.replace(/^\/spam-checker/, "") || "/";
 			target.hostname = SPAM_FRONTEND;
-			target.protocol = 'https:';
-			target.port = '';
+			target.protocol = "https:";
 			return fetch(target.toString(), request);
-		}
+		  }
 
 		// ❸ Portfolio SPA ------------------------------------------------------
 		if (path.startsWith('/portfolio')) {
