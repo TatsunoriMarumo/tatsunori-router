@@ -13,8 +13,18 @@ const PORTFOLIO_FRONT = 'your-portfolio.vercel.app';
 export default {
 	async fetch(request: Request, _env: Env, _ctx: ExecutionContext): Promise<Response> {
 		// 受信 URL をコピーしてホスト名だけ後で差し替える
-		const target = new URL(request.url);
-		const path = target.pathname; // `/spam-checker/...` など
+               const target = new URL(request.url);
+               const path = target.pathname; // `/spam-checker/...` など
+
+               // React Router SSR assets are requested from the root (e.g. `/__manifest`)
+               if (path.startsWith('/__')) {
+                       target.hostname = SPAM_FRONTEND;
+                       target.protocol = 'https:';
+                       target.port = '';
+
+                       const spaReq = new Request(target.toString(), request);
+                       return fetch(spaReq);
+               }
 		// ❶ FastAPI backend ---------------------------------------------------
 		if (path.startsWith('/spam-checker/api')) {
 			target.hostname = BACKEND_API;
