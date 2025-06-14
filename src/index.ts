@@ -36,7 +36,18 @@ export default {
 			return fetch(backendReq);
 		}
 
-		// ❷ Spam-checker SPA --------------------------------------------------
+		// ❷ Static assets ----------------------------------------------
+		if (path.startsWith('/assets/') || path.startsWith('/spam-checker/assets/')) {
+			target.pathname = path.startsWith('/spam-checker') ? path.replace(/^\/spam-checker/, '') : path;
+			target.hostname = SPAM_FRONTEND;
+			target.protocol = 'https:';
+			target.port = '';
+
+			const assetReq = new Request(target.toString(), request);
+			return fetch(assetReq);
+		}
+
+		// ❸ Spam-checker SPA --------------------------------------------------
 		if (path.startsWith('/spam-checker')) {
 			target.pathname = path.replace(/^\/spam-checker/, '') || '/';
 			target.hostname = SPAM_FRONTEND;
@@ -47,7 +58,7 @@ export default {
 			return fetch(spaReq);
 		}
 
-		// ❸ Portfolio SPA ------------------------------------------------------
+		// ❹ Portfolio SPA ------------------------------------------------------
 		if (path.startsWith('/portfolio')) {
 			target.hostname = PORTFOLIO_FRONT;
 			target.protocol = 'https:';
@@ -55,7 +66,7 @@ export default {
 			return fetch(target.toString(), request);
 		}
 
-		// ❹ Fallback -----------------------------------------------------------
+		// ❺ Fallback -----------------------------------------------------------
 		return new Response('Not Found', { status: 404 });
 	},
 } satisfies ExportedHandler<Env>;
